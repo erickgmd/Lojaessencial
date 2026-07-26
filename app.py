@@ -147,7 +147,7 @@ def load_user(user_id):
 def inject_globals():
     return {
         "store_name": "Essencial",
-        "whatsapp_number": os.getenv("WHATSAPP_NUMBER", "619917455141"),
+        "whatsapp_number": os.getenv("WHATSAPP_NUMBER", "61998064041"),
         "current_year": datetime.now().year
     }
 

@@ -23,20 +23,34 @@
         <div><span class="text-black/40">Gênero</span><p class="mt-1 font-medium">{{ product.gender }}</p></div>
         <div><span class="text-black/40">Disponibilidade</span><p class="mt-1 font-medium">{{ product.status }}</p></div>
       </div>
-      <div class="mt-6"><p class="text-sm font-semibold">Tamanhos</p><div class="mt-3 flex flex-wrap gap-2">{% for size in product.sizes.split(',') %}<button class="option-btn">{{ size }}</button>{% endfor %}</div></div>
-      <div class="mt-6"><p class="text-sm font-semibold">Cores</p><div class="mt-3 flex flex-wrap gap-2">{% for color in product.colors.split(',') %}<button class="option-btn">{{ color }}</button>{% endfor %}</div></div>
+      <div class="mt-6">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm font-semibold">Tamanho <span class="text-red-600">*</span></p>
+          <span id="selectedSizeLabel" class="text-xs text-black/45">Selecione uma opção</span>
+        </div>
+        <div id="sizeOptions" class="mt-3 flex flex-wrap gap-2">
+          {% for size in product.sizes.split(',') %}
+          {% set clean_size = size|trim %}
+          {% if clean_size %}<button type="button" class="option-btn product-option" data-option-group="size" data-option-value="{{ clean_size }}" aria-pressed="false">{{ clean_size }}</button>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mt-6">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm font-semibold">Cor <span class="text-red-600">*</span></p>
+          <span id="selectedColorLabel" class="text-xs text-black/45">Selecione uma opção</span>
+        </div>
+        <div id="colorOptions" class="mt-3 flex flex-wrap gap-2">
+          {% for color in product.colors.split(',') %}
+          {% set clean_color = color|trim %}
+          {% if clean_color %}<button type="button" class="option-btn product-option" data-option-group="color" data-option-value="{{ clean_color }}" aria-pressed="false">{{ clean_color }}</button>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      <p id="whatsappValidation" class="mt-4 hidden rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">Escolha o tamanho e a cor antes de continuar.</p>
       <button class="mt-6 text-sm font-semibold underline underline-offset-4" onclick="document.getElementById('sizeModal').classList.remove('hidden')">Ver tabela de medidas</button>
       <div class="mt-8 grid gap-3">
-        {% set whatsapp_message = "Olá! Tenho interesse neste produto da Essencial:
-
-" ~ product.name ~ "
-Código: " ~ product.code ~ "
-Preço: R$ " ~ ("%.2f"|format(product.price)|replace(".", ",")) ~ "
-
-Foto do produto: " ~ product.primary_image ~ "
-
-Página do produto: " ~ request.url %}
-        <a target="_blank" rel="noopener noreferrer" href="https://wa.me/{{ whatsapp_number }}?text={{ whatsapp_message|urlencode }}" class="btn-primary"><i data-lucide="message-circle"></i> Falar no WhatsApp</a>
+        <button type="button" id="whatsappProductButton" class="btn-primary" data-whatsapp-number="{{ whatsapp_number }}" data-product-name="{{ product.name }}" data-product-code="{{ product.code }}" data-product-price="R$ {{ '%.2f'|format(product.price)|replace('.', ',') }}" data-product-url="{{ request.url }}"><i data-lucide="message-circle"></i> Falar no WhatsApp</button>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><button id="shareButton" class="btn-secondary"><i data-lucide="share-2"></i> Compartilhar</button><button class="btn-secondary favorite-btn" data-id="{{ product.id }}"><i data-lucide="heart"></i> Favoritar</button></div>
       </div>
     </div>
@@ -48,4 +62,58 @@ Página do produto: " ~ request.url %}
 {% endif %}
 
 <div id="sizeModal" class="fixed inset-0 z-[60] hidden overflow-y-auto bg-black/60 p-4 sm:p-5"><div class="mx-auto mt-10 max-w-xl rounded-3xl bg-white p-5 sm:mt-20 sm:p-8"><div class="flex justify-between"><h3 class="font-display text-2xl font-semibold">Tabela de medidas</h3><button onclick="document.getElementById('sizeModal').classList.add('hidden')"><i data-lucide="x"></i></button></div><div class="mt-6 overflow-hidden rounded-xl border"><table class="w-full text-sm"><thead class="bg-sand"><tr><th class="p-3">Tamanho</th><th>Peito</th><th>Cintura</th></tr></thead><tbody><tr class="border-t text-center"><td class="p-3">P</td><td>88-94 cm</td><td>72-78 cm</td></tr><tr class="border-t text-center"><td class="p-3">M</td><td>95-101 cm</td><td>79-85 cm</td></tr><tr class="border-t text-center"><td class="p-3">G</td><td>102-108 cm</td><td>86-92 cm</td></tr></tbody></table></div></div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const selections = { size: "", color: "" };
+  const validation = document.getElementById("whatsappValidation");
+  const whatsappButton = document.getElementById("whatsappProductButton");
+
+  document.querySelectorAll(".product-option").forEach((button) => {
+    button.addEventListener("click", () => {
+      const group = button.dataset.optionGroup;
+      const value = button.dataset.optionValue;
+
+      document.querySelectorAll(`.product-option[data-option-group="${group}"]`).forEach((item) => {
+        item.classList.remove("active");
+        item.setAttribute("aria-pressed", "false");
+      });
+
+      button.classList.add("active");
+      button.setAttribute("aria-pressed", "true");
+      selections[group] = value;
+
+      const label = document.getElementById(group === "size" ? "selectedSizeLabel" : "selectedColorLabel");
+      if (label) label.textContent = value;
+      validation?.classList.add("hidden");
+    });
+  });
+
+  whatsappButton?.addEventListener("click", () => {
+    if (!selections.size || !selections.color) {
+      validation?.classList.remove("hidden");
+      const missingGroup = !selections.size ? "sizeOptions" : "colorOptions";
+      document.getElementById(missingGroup)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    const message = [
+      "Olá! Tenho interesse neste produto da Essencial:",
+      "",
+      whatsappButton.dataset.productName,
+      `Código: ${whatsappButton.dataset.productCode}`,
+      `Preço: ${whatsappButton.dataset.productPrice}`,
+      `Tamanho escolhido: ${selections.size}`,
+      `Cor escolhida: ${selections.color}`,
+      "",
+      `Página do produto: ${whatsappButton.dataset.productUrl}`
+    ].join("\n");
+
+    const url = `https://wa.me/${whatsappButton.dataset.whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  });
+})();
+</script>
 {% endblock %}

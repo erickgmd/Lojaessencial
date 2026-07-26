@@ -119,12 +119,18 @@ class Product(db.Model):
     launch = db.Column(db.Boolean, default=False)
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    images = db.relationship("ProductImage", backref="product", cascade="all, delete-orphan")
+    images = db.relationship(
+        "ProductImage",
+        backref="product",
+        cascade="all, delete-orphan",
+        order_by="ProductImage.is_primary.desc(), ProductImage.sort_order.asc(), ProductImage.id.asc()",
+    )
 
     @property
     def primary_image(self):
         if self.images:
-            return self.images[0].url
+            primary = next((image for image in self.images if image.is_primary), None)
+            return (primary or self.images[0]).url
         return url_for("static", filename="img/product-placeholder.svg")
 
     @property
@@ -137,6 +143,8 @@ class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.String(700), nullable=False)
     path = db.Column(db.String(500), default="")
+    is_primary = db.Column(db.Boolean, default=False, nullable=False)
+    sort_order = db.Column(db.Integer, default=0, nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
 
 @login_manager.user_loader
@@ -407,8 +415,14 @@ def admin_product_new():
             db.session.flush()
 
             uploaded_images = save_product_images(request.files.getlist("images"), product.slug)
-            for url, path in uploaded_images:
-                db.session.add(ProductImage(url=url, path=path, product_id=product.id))
+            for index, (url, path) in enumerate(uploaded_images):
+                db.session.add(ProductImage(
+                    url=url,
+                    path=path,
+                    product_id=product.id,
+                    is_primary=(index == 0),
+                    sort_order=index,
+                ))
             db.session.commit()
             flash("Produto cadastrado com sucesso.", "success")
             return redirect(url_for("admin_dashboard"))
@@ -473,12 +487,63 @@ def admin_product_edit(product_id):
         except (ValueError, RuntimeError) as exc:
             flash(str(exc), "error")
             return render_template("admin_form.html", product=product, categories=categories)
-        for url, path in uploaded_images:
-            db.session.add(ProductImage(url=url, path=path, product_id=product.id))
+        next_order = max((image.sort_order for image in product.images), default=-1) + 1
+        has_primary = any(image.is_primary for image in product.images)
+        for index, (url, path) in enumerate(uploaded_images):
+            db.session.add(ProductImage(
+                url=url,
+                path=path,
+                product_id=product.id,
+                is_primary=(not has_primary and index == 0),
+                sort_order=next_order + index,
+            ))
         db.session.commit()
         flash("Produto atualizado.", "success")
         return redirect(url_for("admin_dashboard"))
     return render_template("admin_form.html", product=product, categories=categories)
+
+@app.route("/admin/produto/<int:product_id>/imagem/<int:image_id>/principal", methods=["POST"])
+@login_required
+def admin_product_image_primary(product_id, image_id):
+    product = Product.query.get_or_404(product_id)
+    image = ProductImage.query.filter_by(id=image_id, product_id=product.id).first_or_404()
+    for item in product.images:
+        item.is_primary = item.id == image.id
+    db.session.commit()
+    flash("Imagem principal atualizada.", "success")
+    return redirect(url_for("admin_product_edit", product_id=product.id) + "#imagens")
+
+
+@app.route("/admin/produto/<int:product_id>/imagem/<int:image_id>/remover", methods=["POST"])
+@login_required
+def admin_product_image_delete(product_id, image_id):
+    product = Product.query.get_or_404(product_id)
+    image = ProductImage.query.filter_by(id=image_id, product_id=product.id).first_or_404()
+    was_primary = image.is_primary
+    image_path = image.path
+    db.session.delete(image)
+    db.session.flush()
+
+    remaining = ProductImage.query.filter_by(product_id=product.id).order_by(
+        ProductImage.sort_order.asc(), ProductImage.id.asc()
+    ).all()
+    for index, item in enumerate(remaining):
+        item.sort_order = index
+    if was_primary and remaining:
+        remaining[0].is_primary = True
+    db.session.commit()
+
+    if image_path:
+        try:
+            delete_storage_image(PRODUCT_BUCKET, image_path)
+        except Exception:
+            app.logger.exception("Não foi possível remover a imagem do Supabase Storage")
+            flash("A imagem foi removida do produto, mas o arquivo não pôde ser apagado do Storage.", "error")
+            return redirect(url_for("admin_product_edit", product_id=product.id) + "#imagens")
+
+    flash("Imagem removida com sucesso.", "success")
+    return redirect(url_for("admin_product_edit", product_id=product.id) + "#imagens")
+
 
 @app.route("/admin/categoria/nova", methods=["GET", "POST"])
 @login_required
@@ -641,8 +706,20 @@ def initialize_database():
     # Estas alterações evitam erro 500 ao salvar caminhos das imagens no Supabase Storage.
     if database_url.startswith("postgresql"):
         db.session.execute(db.text("ALTER TABLE product_image ADD COLUMN IF NOT EXISTS path VARCHAR(500) DEFAULT ''"))
+        db.session.execute(db.text("ALTER TABLE product_image ADD COLUMN IF NOT EXISTS is_primary BOOLEAN NOT NULL DEFAULT FALSE"))
+        db.session.execute(db.text("ALTER TABLE product_image ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0"))
         db.session.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS image_url VARCHAR(700) DEFAULT ''"))
         db.session.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS image_path VARCHAR(500) DEFAULT ''"))
+        db.session.commit()
+
+        # Garante que produtos antigos tenham uma imagem principal definida.
+        product_ids = [row[0] for row in db.session.query(ProductImage.product_id).distinct().all()]
+        for product_id in product_ids:
+            images = ProductImage.query.filter_by(product_id=product_id).order_by(
+                ProductImage.sort_order.asc(), ProductImage.id.asc()
+            ).all()
+            if images and not any(image.is_primary for image in images):
+                images[0].is_primary = True
         db.session.commit()
     existing_names = {c.name.lower() for c in Category.query.all()}
     product_categories = db.session.query(Product.category).filter(

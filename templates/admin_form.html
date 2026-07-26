@@ -55,11 +55,47 @@
       </select>
     </label>
 
-    <label class="block text-sm font-medium">
-      Imagens
+    <label class="block text-sm font-medium md:col-span-2">
+      Adicionar imagens
       <input class="input mt-2" name="images" type="file" accept=".jpg,.jpeg,.png,.webp" multiple>
-      <span class="mt-2 block text-xs font-normal text-black/45">Opcional ao editar. Use imagens verticais, preferencialmente na proporção 4:5.</span>
+      <span class="mt-2 block text-xs font-normal text-black/45">Você pode selecionar várias imagens de uma vez. Use imagens verticais, preferencialmente na proporção 4:5.</span>
     </label>
+
+    {% if product and product.images %}
+    <div id="imagens" class="md:col-span-2">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold">Imagens cadastradas</h2>
+          <p class="mt-1 text-xs font-normal text-black/45">Escolha a capa do produto ou remova imagens que não serão mais usadas.</p>
+        </div>
+        <span class="rounded-full bg-black/5 px-3 py-1 text-xs">{{ product.images|length }} imagem(ns)</span>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {% for image in product.images %}
+        <article class="overflow-hidden rounded-2xl border {% if image.is_primary %}border-black ring-2 ring-black/10{% else %}border-black/10{% endif %}">
+          <div class="relative aspect-[4/5] bg-neutral-100">
+            <img src="{{ image.url }}" alt="Imagem de {{ product.name }}" class="h-full w-full object-contain p-2">
+            {% if image.is_primary %}
+            <span class="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">Principal</span>
+            {% endif %}
+          </div>
+          <div class="grid gap-2 p-3">
+            {% if not image.is_primary %}
+            <button
+              type="submit"
+              form="primary-image-{{ image.id }}"
+              class="btn-secondary w-full text-sm">Definir como principal</button>
+            {% endif %}
+            <button
+              type="submit"
+              form="delete-image-{{ image.id }}"
+              class="w-full rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50">Remover imagem</button>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
     <label class="block text-sm font-medium md:col-span-2">
       Descrição
@@ -74,5 +110,12 @@
 
     <button class="btn-primary md:col-span-2">{{ "Salvar alterações" if product else "Cadastrar produto" }}</button>
   </form>
+
+  {% if product %}
+    {% for image in product.images %}
+    <form id="primary-image-{{ image.id }}" method="post" action="{{ url_for('admin_product_image_primary', product_id=product.id, image_id=image.id) }}"></form>
+    <form id="delete-image-{{ image.id }}" method="post" action="{{ url_for('admin_product_image_delete', product_id=product.id, image_id=image.id) }}" onsubmit="return confirm('Deseja remover esta imagem permanentemente?');"></form>
+    {% endfor %}
+  {% endif %}
 </section>
 {% endblock %}

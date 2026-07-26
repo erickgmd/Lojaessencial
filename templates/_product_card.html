@@ -5,7 +5,7 @@
     <a href="{{ url_for('product_detail', slug=product.slug) }}">
       <div class="skeleton absolute inset-0"></div>
       <img src="{{ product.primary_image }}" alt="{{ product.name }}" loading="lazy"
-        class="aspect-[4/5] w-full object-cover transition duration-700 group-hover:scale-105"
+        class="aspect-[4/5] w-full bg-neutral-100 object-contain p-2 transition duration-700 group-hover:scale-105"
         onload="this.previousElementSibling.style.display='none'">
     </a>
     <button class="favorite-btn absolute right-2 top-2 sm:right-4 sm:top-4 rounded-full bg-white/90 p-2 shadow-sm backdrop-blur" data-id="{{ product.id }}">

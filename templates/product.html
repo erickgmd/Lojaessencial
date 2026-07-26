@@ -8,7 +8,7 @@
     <div class="grid gap-3 sm:grid-cols-2 sm:gap-4">
       {% for image in product.images %}
       <button class="image-zoom overflow-hidden rounded-2xl bg-neutral-100 {% if loop.first %}sm:col-span-2{% endif %}">
-        <img src="{{ image.url }}" loading="lazy" alt="{{ product.name }}" class="w-full object-cover transition duration-500 hover:scale-110 {% if loop.first %}aspect-[4/3]{% else %}aspect-square{% endif %}">
+        <img src="{{ image.url }}" loading="lazy" alt="{{ product.name }}" class="w-full bg-neutral-100 object-contain p-3 transition duration-500 hover:scale-105 {% if loop.first %}aspect-[4/5]{% else %}aspect-square{% endif %}">
       </button>
       {% endfor %}
     </div>

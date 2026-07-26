@@ -13,6 +13,7 @@ from flask import (
     flash, jsonify, send_from_directory, Response
 )
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     login_required, current_user
@@ -359,43 +360,84 @@ def save_product_images(files, product_slug):
 def admin_product_new():
     categories = Category.query.filter_by(active=True).order_by(Category.sort_order, Category.name).all()
     if request.method == "POST":
-        category_name = request.form.get("category", "").strip()
-        if not Category.query.filter_by(name=category_name, active=True).first():
-            flash("Selecione uma categoria ativa cadastrada no painel.", "error")
-            return render_template("admin_form.html", product=None, categories=categories)
-        product = Product(
-            name=request.form["name"],
-            slug=slugify(request.form["name"]) + "-" + uuid.uuid4().hex[:5],
-            code=request.form["code"],
-            price=float(request.form["price"]),
-            old_price=float(request.form["old_price"]) if request.form.get("old_price") else None,
-            category=category_name,
-            brand=request.form["brand"],
-            sizes=request.form.get("sizes", ""),
-            colors=request.form.get("colors", ""),
-            material=request.form.get("material", ""),
-            fit=request.form.get("fit", ""),
-            gender=request.form.get("gender", ""),
-            description=request.form.get("description", ""),
-            stock=int(request.form.get("stock", 0)),
-            status=request.form.get("status", "Em estoque"),
-            featured="featured" in request.form,
-            launch="launch" in request.form,
-            active="active" in request.form,
-        )
-        db.session.add(product)
-        db.session.flush()
+        uploaded_images = []
         try:
+            name = request.form.get("name", "").strip()
+            code = request.form.get("code", "").strip()
+            brand = request.form.get("brand", "").strip()
+            category_name = request.form.get("category", "").strip()
+            price_text = request.form.get("price", "").strip().replace(",", ".")
+            old_price_text = request.form.get("old_price", "").strip().replace(",", ".")
+            stock_text = request.form.get("stock", "0").strip() or "0"
+
+            if not name or not code or not brand or not price_text or not category_name:
+                raise ValueError("Preencha todos os campos obrigatórios.")
+            if Product.query.filter(db.func.lower(Product.code) == code.lower()).first():
+                raise ValueError("Já existe um produto cadastrado com esse código.")
+            if not Category.query.filter_by(name=category_name, active=True).first():
+                raise ValueError("Selecione uma categoria ativa cadastrada no painel.")
+
+            price = float(price_text)
+            old_price = float(old_price_text) if old_price_text else None
+            stock = int(stock_text)
+            if price < 0 or (old_price is not None and old_price < 0) or stock < 0:
+                raise ValueError("Preço, preço anterior e estoque não podem ser negativos.")
+
+            product = Product(
+                name=name,
+                slug=slugify(name) + "-" + uuid.uuid4().hex[:5],
+                code=code,
+                price=price,
+                old_price=old_price,
+                category=category_name,
+                brand=brand,
+                sizes=request.form.get("sizes", ""),
+                colors=request.form.get("colors", ""),
+                material=request.form.get("material", ""),
+                fit=request.form.get("fit", ""),
+                gender=request.form.get("gender", ""),
+                description=request.form.get("description", ""),
+                stock=stock,
+                status=request.form.get("status", "Em estoque"),
+                featured="featured" in request.form,
+                launch="launch" in request.form,
+                active="active" in request.form,
+            )
+            db.session.add(product)
+            db.session.flush()
+
             uploaded_images = save_product_images(request.files.getlist("images"), product.slug)
-        except (ValueError, RuntimeError) as exc:
+            for url, path in uploaded_images:
+                db.session.add(ProductImage(url=url, path=path, product_id=product.id))
+            db.session.commit()
+            flash("Produto cadastrado com sucesso.", "success")
+            return redirect(url_for("admin_dashboard"))
+
+        except ValueError as exc:
             db.session.rollback()
             flash(str(exc), "error")
-            return render_template("admin_form.html", product=None, categories=categories)
-        for url, path in uploaded_images:
-            db.session.add(ProductImage(url=url, path=path, product_id=product.id))
-        db.session.commit()
-        flash("Produto cadastrado com sucesso.", "success")
-        return redirect(url_for("admin_dashboard"))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Não foi possível cadastrar. Verifique se o código do produto já existe.", "error")
+        except (RuntimeError, requests.RequestException) as exc:
+            db.session.rollback()
+            app.logger.exception("Falha no upload da imagem do produto")
+            flash(f"Não foi possível enviar a imagem: {exc}", "error")
+        except SQLAlchemyError:
+            db.session.rollback()
+            app.logger.exception("Falha ao cadastrar produto no banco de dados")
+            flash("Erro ao salvar o produto no banco. Verifique se as migrações do Supabase foram executadas.", "error")
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Erro inesperado ao cadastrar produto")
+            flash("Ocorreu um erro inesperado no cadastro. Consulte os logs do Render.", "error")
+
+        for _, image_path in uploaded_images:
+            try:
+                delete_storage_image(PRODUCT_BUCKET, image_path)
+            except Exception:
+                app.logger.warning("Não foi possível limpar imagem órfã: %s", image_path)
+        return render_template("admin_form.html", product=None, categories=categories)
     return render_template("admin_form.html", product=None, categories=categories)
 
 @app.route("/admin/produto/<int:product_id>/editar", methods=["GET", "POST"])
@@ -593,8 +635,15 @@ def sitemap():
     return Response(xml, mimetype="application/xml")
 
 def initialize_database():
-    """Cria as tabelas e registra como categorias os nomes já usados por produtos existentes."""
+    """Cria tabelas e aplica pequenas migrações compatíveis com instalações existentes."""
     db.create_all()
+    # db.create_all() não adiciona colunas em tabelas já existentes.
+    # Estas alterações evitam erro 500 ao salvar caminhos das imagens no Supabase Storage.
+    if database_url.startswith("postgresql"):
+        db.session.execute(db.text("ALTER TABLE product_image ADD COLUMN IF NOT EXISTS path VARCHAR(500) DEFAULT ''"))
+        db.session.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS image_url VARCHAR(700) DEFAULT ''"))
+        db.session.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS image_path VARCHAR(500) DEFAULT ''"))
+        db.session.commit()
     existing_names = {c.name.lower() for c in Category.query.all()}
     product_categories = db.session.query(Product.category).filter(
         Product.category.isnot(None), Product.category != ""

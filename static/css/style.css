@@ -22,3 +22,64 @@ body { min-height: 100vh; }
 .reveal { animation:fadeUp .8s ease both; }
 @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
 .product-card { animation:fadeUp .45s ease both; }
+
+
+/* Identidade visual Essencial */
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  min-width: 0;
+  color: #111;
+  text-decoration: none;
+}
+.brand-logo {
+  width: 2.55rem;
+  height: 2.55rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #eef5f5;
+  transition: transform .25s ease;
+}
+.brand-link:hover .brand-logo { transform: scale(1.04); }
+.brand-name {
+  max-width: 10.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Montserrat, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  color: #fff;
+  text-decoration: none;
+  font-family: Montserrat, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.footer-brand-logo {
+  width: 3.15rem;
+  height: 3.15rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #eef5f5;
+}
+@media (min-width: 640px) {
+  .brand-link { gap: .75rem; }
+  .brand-logo { width: 3rem; height: 3rem; }
+  .brand-name { max-width: none; font-size: 1.2rem; letter-spacing: .18em; }
+}
+@media (max-width: 380px) {
+  .brand-logo { width: 2.25rem; height: 2.25rem; }
+  .brand-name { max-width: 7.2rem; font-size: .88rem; letter-spacing: .1em; }
+}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="mx-auto max-w-5xl px-5 py-12 lg:px-8">
+  <div class="mb-8"><a href="{{ url_for('admin_dashboard') }}" class="text-sm underline">← Voltar</a><h1 class="mt-4 font-display text-4xl font-semibold">{{ "Editar produto" if product else "Novo produto" }}</h1></div>
+  <form method="post" enctype="multipart/form-data" class="grid gap-6 rounded-3xl border border-black/10 p-6 md:grid-cols-2 md:p-8">
+    {% set fields = [
+      ('name','Nome','text'),('code','Código','text'),('price','Preço','number'),('old_price','Preço anterior','number'),
+      ('brand','Marca','text'),('sizes','Tamanhos separados por vírgula','text'),('colors','Cores separadas por vírgula','text'),
+      ('material','Material','text'),('fit','Modelagem','text'),('gender','Gênero','text'),('stock','Quantidade em estoque','number')
+    ] %}
+    {% for name,label,type in fields %}<label class="block text-sm font-medium">{{ label }}<input class="input mt-2" name="{{ name }}" type="{{ type }}" step="{{ '0.01' if name in ['price','old_price'] else '1' }}" value="{{ product[name] if product else '' }}" {% if name in ['name','code','price','category','brand'] %}required{% endif %}></label>{% endfor %}
+    <label class="block text-sm font-medium">Categoria<select class="input mt-2" name="category" required><option value="">Selecione uma categoria</option>{% for category in categories %}<option value="{{ category.name }}" {% if product and product.category == category.name %}selected{% endif %}>{{ category.name }}{{ ' (inativa)' if not category.active else '' }}</option>{% endfor %}</select><span class="mt-2 block text-xs font-normal text-black/45">Cadastre novas categorias na seção Categorias do painel.</span></label>
+    <label class="block text-sm font-medium">Status<select class="input mt-2" name="status">{% for s in ['Em estoque','Poucas unidades','Esgotado'] %}<option {% if product and product.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+    <label class="block text-sm font-medium">Imagens<input class="input mt-2" name="images" type="file" accept=".jpg,.jpeg,.png,.webp" multiple></label>
+    <label class="block text-sm font-medium md:col-span-2">Descrição<textarea class="input mt-2 min-h-32" name="description">{{ product.description if product else '' }}</textarea></label>
+    <div class="flex flex-wrap gap-5 md:col-span-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" name="featured" {% if product and product.featured %}checked{% endif %}> Mais vendido</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" name="launch" {% if product and product.launch %}checked{% endif %}> Lançamento</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" name="active" {% if not product or product.active %}checked{% endif %}> Produto ativo</label></div>
+    <button class="btn-primary md:col-span-2">{{ "Salvar alterações" if product else "Cadastrar produto" }}</button>
+  </form>
+</section>
+{% endblock %}

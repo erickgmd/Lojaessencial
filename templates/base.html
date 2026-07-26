@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ store_name }} | Moda contemporânea{% endblock %}</title>
+  <meta name="description" content="{% block description %}Catálogo online de moda premium, peças selecionadas e atendimento personalizado.{% endblock %}">
+  <meta property="og:title" content="{{ store_name }}">
+  <meta property="og:description" content="Conheça nosso catálogo de moda.">
+  <meta property="og:type" content="website">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Montserrat', 'sans-serif'] },
+          colors: { ink: '#111111', sand: '#f5f2ed' }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-white text-ink antialiased">
+  <header class="fixed inset-x-0 top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
+      <a href="{{ url_for('home') }}" class="max-w-[170px] truncate font-display text-base font-bold uppercase tracking-[.14em] sm:max-w-none sm:text-xl sm:tracking-[.18em]">{{ store_name }}</a>
+      <nav class="hidden items-center gap-8 text-sm font-medium lg:flex">
+        <a class="nav-link" href="{{ url_for('catalog') }}">Catálogo</a>
+        <a class="nav-link" href="{{ url_for('catalog', launch='1') }}">Lançamentos</a>
+        <a class="nav-link" href="{{ url_for('catalog', promo='1') }}">Promoções</a>
+        <a class="nav-link" href="#contato">Contato</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="{{ url_for('catalog') }}" class="rounded-full p-2 hover:bg-black/5" aria-label="Pesquisar"><i data-lucide="search" class="h-5 w-5"></i></a>
+        <button id="favoritesButton" class="rounded-full p-2 hover:bg-black/5" aria-label="Favoritos"><i data-lucide="heart" class="h-5 w-5"></i></button>
+        <button id="mobileMenuButton" class="rounded-full p-2 hover:bg-black/5 lg:hidden"><i data-lucide="menu" class="h-6 w-6"></i></button>
+      </div>
+    </div>
+    <div id="mobileMenu" class="hidden border-t border-black/5 bg-white px-5 py-5 lg:hidden">
+      <div class="flex flex-col gap-4 text-sm font-medium">
+        <a href="{{ url_for('catalog') }}">Catálogo</a>
+        <a href="#contato">Contato</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-16 sm:pt-20">{% block content %}{% endblock %}</main>
+
+  <footer id="contato" class="border-t border-black/10 bg-neutral-950 text-white">
+    <div class="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+      <div>
+        <h3 class="max-w-[170px] truncate font-display text-base font-bold uppercase tracking-[.14em] sm:max-w-none sm:text-xl sm:tracking-[.18em]">{{ store_name }}</h3>
+        <p class="mt-4 max-w-xs text-sm leading-6 text-white/60">Moda contemporânea, curadoria especial e atendimento próximo.</p>
+      </div>
+      <div><h4 class="font-semibold">Institucional</h4><div class="mt-4 space-y-3 text-sm text-white/60"><p>Sobre nós</p><p>Política de privacidade</p><p>Trocas e devoluções</p></div></div>
+      <div><h4 class="font-semibold">Contato</h4><div class="mt-4 space-y-3 text-sm text-white/60"><p>Seg. a sáb., 9h às 19h</p><p>Brasília - DF</p><p>(61) 99174-5541</p></div></div>
+      <div><h4 class="font-semibold">Redes sociais</h4><div class="mt-4 flex gap-3">
+        <a class="social-icon" href="#"><i data-lucide="instagram"></i></a>
+        <a class="social-icon" href="#"><i data-lucide="facebook"></i></a>
+        <a class="social-icon" href="#"><i data-lucide="music-2"></i></a>
+      </div></div>
+    </div>
+    <div class="border-t border-white/10 px-5 py-6 text-center text-xs text-white/45">
+  <div>© {{ current_year }} {{ store_name }}. Todos os direitos reservados.</div>
+  <div class="mt-2">
+    <a href="{{ url_for('admin_login') if false else '/admin/login' }}" class="text-white/40 hover:text-white/70 transition text-[11px]">
+      Painel Administrativo
+    </a>
+  </div>
+</div>
+  </footer>
+
+  <a href="https://wa.me/{{ whatsapp_number }}?text=Olá! Gostaria de saber mais sobre os produtos." target="_blank"
+     class="fixed bottom-4 right-4 z-40 flex h-12 w-12 sm:bottom-6 sm:right-6 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xl transition hover:scale-110"
+     aria-label="WhatsApp"><i data-lucide="message-circle" class="h-7 w-7"></i></a>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

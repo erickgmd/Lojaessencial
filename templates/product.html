@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} | {{ store_name }}{% endblock %}
+{% block description %}{{ product.description }}{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
+  <div class="mb-8 text-xs text-black/45"><a href="/">Início</a> / <a href="/catalogo">Catálogo</a> / {{ product.name }}</div>
+  <div class="grid gap-8 lg:grid-cols-2 lg:gap-12">
+    <div class="grid gap-3 sm:grid-cols-2 sm:gap-4">
+      {% for image in product.images %}
+      <button class="image-zoom overflow-hidden rounded-2xl bg-neutral-100 {% if loop.first %}sm:col-span-2{% endif %}">
+        <img src="{{ image.url }}" loading="lazy" alt="{{ product.name }}" class="w-full object-cover transition duration-500 hover:scale-110 {% if loop.first %}aspect-[4/3]{% else %}aspect-square{% endif %}">
+      </button>
+      {% endfor %}
+    </div>
+    <div class="lg:sticky lg:top-28 lg:h-fit">
+      <p class="text-xs uppercase tracking-wider text-black/45">{{ product.brand }} · {{ product.code }}</p>
+      <h1 class="mt-3 font-display text-3xl font-semibold sm:text-4xl">{{ product.name }}</h1>
+      <div class="mt-5 flex items-center gap-3"><span class="text-2xl font-semibold">R$ {{ "%.2f"|format(product.price)|replace(".", ",") }}</span>{% if product.old_price %}<span class="text-black/35 line-through">R$ {{ "%.2f"|format(product.old_price)|replace(".", ",") }}</span>{% endif %}</div>
+      <p class="mt-6 leading-7 text-black/60">{{ product.description }}</p>
+      <div class="mt-8 grid grid-cols-2 gap-4 border-y border-black/10 py-6 text-sm">
+        <div><span class="text-black/40">Material</span><p class="mt-1 font-medium">{{ product.material }}</p></div>
+        <div><span class="text-black/40">Modelagem</span><p class="mt-1 font-medium">{{ product.fit }}</p></div>
+        <div><span class="text-black/40">Gênero</span><p class="mt-1 font-medium">{{ product.gender }}</p></div>
+        <div><span class="text-black/40">Disponibilidade</span><p class="mt-1 font-medium">{{ product.status }}</p></div>
+      </div>
+      <div class="mt-6"><p class="text-sm font-semibold">Tamanhos</p><div class="mt-3 flex flex-wrap gap-2">{% for size in product.sizes.split(',') %}<button class="option-btn">{{ size }}</button>{% endfor %}</div></div>
+      <div class="mt-6"><p class="text-sm font-semibold">Cores</p><div class="mt-3 flex flex-wrap gap-2">{% for color in product.colors.split(',') %}<button class="option-btn">{{ color }}</button>{% endfor %}</div></div>
+      <button class="mt-6 text-sm font-semibold underline underline-offset-4" onclick="document.getElementById('sizeModal').classList.remove('hidden')">Ver tabela de medidas</button>
+      <div class="mt-8 grid gap-3">
+        <a target="_blank" href="https://wa.me/{{ whatsapp_number }}?text=Olá! Tenho interesse no produto {{ product.name }} (código {{ product.code }})." class="btn-primary"><i data-lucide="message-circle"></i> Falar no WhatsApp</a>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><button id="shareButton" class="btn-secondary"><i data-lucide="share-2"></i> Compartilhar</button><button class="btn-secondary favorite-btn" data-id="{{ product.id }}"><i data-lucide="heart"></i> Favoritar</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if related %}
+<section class="mx-auto max-w-7xl px-5 py-20 lg:px-8"><p class="section-kicker">Você também pode gostar</p><h2 class="section-title">Produtos relacionados</h2><div class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">{% for product in related %}{% include "_product_card.html" %}{% endfor %}</div></section>
+{% endif %}
+
+<div id="sizeModal" class="fixed inset-0 z-[60] hidden overflow-y-auto bg-black/60 p-4 sm:p-5"><div class="mx-auto mt-10 max-w-xl rounded-3xl bg-white p-5 sm:mt-20 sm:p-8"><div class="flex justify-between"><h3 class="font-display text-2xl font-semibold">Tabela de medidas</h3><button onclick="document.getElementById('sizeModal').classList.add('hidden')"><i data-lucide="x"></i></button></div><div class="mt-6 overflow-hidden rounded-xl border"><table class="w-full text-sm"><thead class="bg-sand"><tr><th class="p-3">Tamanho</th><th>Peito</th><th>Cintura</th></tr></thead><tbody><tr class="border-t text-center"><td class="p-3">P</td><td>88-94 cm</td><td>72-78 cm</td></tr><tr class="border-t text-center"><td class="p-3">M</td><td>95-101 cm</td><td>79-85 cm</td></tr><tr class="border-t text-center"><td class="p-3">G</td><td>102-108 cm</td><td>86-92 cm</td></tr></tbody></table></div></div></div>
+{% endblock %}

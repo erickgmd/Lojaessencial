@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Catálogo | {{ store_name }}{% endblock %}
+{% block content %}
+<section class="border-b border-black/10 bg-sand">
+  <div class="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+    <p class="section-kicker">Curadoria completa</p><h1 class="font-display text-4xl font-semibold md:text-6xl">Catálogo</h1>
+    <p class="mt-4 max-w-2xl text-black/60">Encontre sua próxima peça favorita usando pesquisa e filtros inteligentes.</p>
+  </div>
+</section>
+
+<section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+  <button id="mobileFiltersButton" type="button" class="mb-5 flex w-full items-center justify-center gap-2 rounded-full border border-black/10 px-4 py-3 text-sm font-semibold lg:hidden"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i> Mostrar filtros</button>
+  <div class="grid gap-8 lg:grid-cols-[280px_1fr]">
+    <aside id="filtersPanel" class="hidden h-fit rounded-2xl border border-black/10 p-5 lg:sticky lg:top-28 lg:block">
+      <div class="flex items-center justify-between"><h2 class="font-semibold">Filtros</h2><button id="clearFilters" class="text-xs underline">Limpar</button></div>
+      <div class="mt-5 space-y-5">
+        <label class="block"><span class="filter-label">Pesquisar</span><div class="relative mt-2"><i data-lucide="search" class="absolute left-3 top-3 h-4 w-4 text-black/40"></i><input id="searchInput" class="input pl-10" placeholder="Nome, código, marca..."></div></label>
+        <label class="block"><span class="filter-label">Categoria</span><select id="categoryFilter" class="input mt-2"><option value="">Todas</option>{% for item in categories %}<option>{{ item }}</option>{% endfor %}</select></label>
+        <label class="block"><span class="filter-label">Marca</span><select id="brandFilter" class="input mt-2"><option value="">Todas</option>{% for item in brands %}<option>{{ item }}</option>{% endfor %}</select></label>
+        <div><span class="filter-label">Faixa de preço</span><div class="mt-2 grid grid-cols-2 gap-2"><input id="minPrice" type="number" class="input" placeholder="Mín."><input id="maxPrice" type="number" class="input" placeholder="Máx."></div></div>
+        <label class="block"><span class="filter-label">Tamanho</span><input id="sizeFilter" class="input mt-2" placeholder="Ex.: M ou 40"></label>
+        <label class="block"><span class="filter-label">Cor</span><input id="colorFilter" class="input mt-2" placeholder="Ex.: Preto"></label>
+        <label class="flex items-center gap-3 text-sm"><input id="promoFilter" type="checkbox" class="h-4 w-4 rounded"> Somente promoções</label>
+        <label class="flex items-center gap-3 text-sm"><input id="launchFilter" type="checkbox" class="h-4 w-4 rounded"> Somente lançamentos</label>
+      </div>
+    </aside>
+    <div>
+      <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p id="resultCount" class="text-sm text-black/50">{{ products|length }} produtos</p><select id="sortFilter" class="w-full rounded-full border border-black/10 px-4 py-2 text-sm sm:w-auto"><option value="default">Ordenar</option><option value="price-asc">Menor preço</option><option value="price-desc">Maior preço</option><option value="name">Nome</option></select></div>
+      <div id="productGrid" class="grid grid-cols-2 gap-x-3 gap-y-9 sm:gap-x-6 sm:gap-y-10 xl:grid-cols-3">
+        {% for product in products %}{% include "_product_card.html" %}{% endfor %}
+      </div>
+      <div id="emptyState" class="hidden rounded-3xl bg-sand px-6 py-20 text-center"><i data-lucide="search-x" class="mx-auto h-10 w-10"></i><h3 class="mt-4 font-display text-2xl font-semibold">Nenhum produto encontrado</h3><p class="mt-2 text-sm text-black/55">Tente remover alguns filtros.</p></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/catalog.js') }}"></script>{% endblock %}

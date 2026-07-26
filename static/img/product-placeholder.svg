@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Produto sem imagem">
+  <rect width="800" height="1000" fill="#f3f4f6"/>
+  <g fill="none" stroke="#9ca3af" stroke-width="18">
+    <path d="M260 300l140-80 140 80 90 170-120 70v270H290V540l-120-70z"/>
+    <path d="M330 260c10 50 130 50 140 0"/>
+  </g>
+  <text x="400" y="900" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" fill="#6b7280">Produto sem imagem</text>
+</svg>

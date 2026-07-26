@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="bg-neutral-950 text-white">
+  <div class="mx-auto flex min-h-[52vh] max-w-7xl items-center px-5 py-20 sm:px-6 lg:px-8">
+    <div class="max-w-2xl">
+      <p class="text-sm font-medium uppercase tracking-[.35em] text-white/60">Catálogo online</p>
+      <h1 class="mt-5 font-display text-4xl font-semibold leading-[1.08] sm:text-5xl md:text-7xl">Estilo que fala por você.</h1>
+      <p class="mt-6 max-w-xl text-base leading-7 text-white/70 md:text-lg">Os produtos exibidos nesta loja são carregados diretamente do banco de dados.</p>
+      <a href="{{ url_for('catalog') }}" class="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-black">Ver catálogo</a>
+    </div>
+  </div>
+</section>
+
+{% if launches %}
+<section class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+  <div class="mb-8 flex items-end justify-between gap-4"><div><p class="section-kicker">Acabaram de chegar</p><h2 class="section-title">Lançamentos</h2></div></div>
+  <div class="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-8 lg:grid-cols-4">
+    {% for product in launches %}{% include "_product_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if categories %}
+<section class="bg-sand py-14 sm:py-20">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <p class="section-kicker">Explore por estilo</p><h2 class="section-title">Categorias</h2>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {% for category in categories %}
+      <a href="{{ url_for('catalog', category=category.name) }}" class="group relative min-h-72 overflow-hidden rounded-3xl bg-neutral-900 ring-1 ring-black/5 transition hover:-translate-y-1">
+        {% if category.image_url %}
+        <img src="{{ category.image_url }}" alt="{{ category.name }}" class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105">
+        {% else %}
+        <div class="absolute inset-0 bg-gradient-to-br from-neutral-700 to-neutral-950"></div>
+        {% endif %}
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+        <div class="absolute inset-x-0 bottom-0 p-7 text-white">
+          <h3 class="font-display text-2xl font-semibold">{{ category.name }}</h3>
+          <p class="mt-2 text-sm text-white/70">{{ category.description or 'Ver produtos desta categoria' }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if bestsellers %}
+<section class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+  <p class="section-kicker">Destaques</p><h2 class="section-title">Mais vendidos</h2>
+  <div class="mt-10 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-8 lg:grid-cols-4">
+    {% for product in bestsellers %}{% include "_product_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if not launches and not bestsellers and not categories %}
+<section class="mx-auto max-w-3xl px-5 py-20 text-center">
+  <div class="rounded-3xl border border-dashed border-black/20 bg-neutral-50 px-6 py-14">
+    <h2 class="font-display text-3xl font-semibold">Catálogo vazio</h2>
+    <p class="mt-4 text-black/60">Nenhum produto foi cadastrado no Supabase. Entre no painel administrativo após criar seu usuário e adicione o primeiro produto.</p>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

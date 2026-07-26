@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="flex min-h-[70vh] items-center justify-center bg-sand px-5">
+  <form method="post" class="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl">
+    <h1 class="font-display text-3xl font-semibold">Área administrativa</h1><p class="mt-2 text-sm text-black/50">Acesso exclusivo do administrador.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ message }}</div>{% endfor %}{% endwith %}
+    <label class="mt-6 block text-sm font-medium">Usuário<input name="username" required class="input mt-2"></label>
+    <label class="mt-4 block text-sm font-medium">Senha<input name="password" type="password" required class="input mt-2"></label>
+    <button class="btn-primary mt-6 w-full">Entrar</button>
+  </form>
+</section>
+{% endblock %}
